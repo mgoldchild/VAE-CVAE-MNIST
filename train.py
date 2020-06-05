@@ -14,7 +14,6 @@ from models import VAE
 
 
 def main(args):
-
     torch.manual_seed(args.seed)
     if torch.cuda.is_available():
         torch.cuda.manual_seed(args.seed)
@@ -23,11 +22,8 @@ def main(args):
 
     ts = time.time()
 
-    dataset = MNIST(
-        root='data', train=True, transform=transforms.ToTensor(),
-        download=True)
-    data_loader = DataLoader(
-        dataset=dataset, batch_size=args.batch_size, shuffle=True)
+    dataset = MNIST(root='data', train=True, transform=transforms.ToTensor(),download=True)
+    data_loader = DataLoader(dataset=dataset, batch_size=args.batch_size, shuffle=True)
 
     def loss_fn(recon_x, x, mean, log_var):
         BCE = torch.nn.functional.binary_cross_entropy(
@@ -40,25 +36,19 @@ def main(args):
         encoder_layer_sizes=args.encoder_layer_sizes,
         latent_size=args.latent_size,
         decoder_layer_sizes=args.decoder_layer_sizes,
-        conditional=args.conditional,
-        num_labels=10 if args.conditional else 0).to(device)
+        num_labels=0).to(device)
 
     optimizer = torch.optim.Adam(vae.parameters(), lr=args.learning_rate)
 
     logs = defaultdict(list)
 
     for epoch in range(args.epochs):
-
         tracker_epoch = defaultdict(lambda: defaultdict(dict))
 
         for iteration, (x, y) in enumerate(data_loader):
-
             x, y = x.to(device), y.to(device)
 
-            if args.conditional:
-                recon_x, mean, log_var, z = vae(x, y)
-            else:
-                recon_x, mean, log_var, z = vae(x)
+            recon_x, mean, log_var, z = vae(x)
 
             for i, yi in enumerate(y):
                 id = len(tracker_epoch)
@@ -78,20 +68,12 @@ def main(args):
                 print("Epoch {:02d}/{:02d} Batch {:04d}/{:d}, Loss {:9.4f}".format(
                     epoch, args.epochs, iteration, len(data_loader)-1, loss.item()))
 
-                if args.conditional:
-                    c = torch.arange(0, 10).long().unsqueeze(1)
-                    x = vae.inference(n=c.size(0), c=c)
-                else:
-                    x = vae.inference(n=10)
+                x = vae.inference(n=10)
 
                 plt.figure()
                 plt.figure(figsize=(5, 10))
                 for p in range(10):
                     plt.subplot(5, 2, p+1)
-                    if args.conditional:
-                        plt.text(
-                            0, 0, "c={:d}".format(c[p].item()), color='black',
-                            backgroundcolor='white', fontsize=8)
                     plt.imshow(x[p].view(28, 28).data.numpy())
                     plt.axis('off')
 
@@ -128,7 +110,6 @@ if __name__ == '__main__':
     parser.add_argument("--latent_size", type=int, default=2)
     parser.add_argument("--print_every", type=int, default=100)
     parser.add_argument("--fig_root", type=str, default='figs')
-    parser.add_argument("--conditional", action='store_true')
 
     args = parser.parse_args()
 
