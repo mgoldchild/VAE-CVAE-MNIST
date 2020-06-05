@@ -66,7 +66,7 @@ def main(args):
 
             if iteration % args.print_every == 0 or iteration == len(data_loader)-1:
                 print("Epoch {:02d}/{:02d} Batch {:04d}/{:d}, Loss {:9.4f}".format(
-                    epoch, args.epochs, iteration, len(data_loader)-1, loss.item()))
+                    epoch+1, args.epochs, iteration, len(data_loader)-1, loss.item()))
 
                 x = vae.inference(n=10)
 
